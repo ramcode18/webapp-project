@@ -5,7 +5,6 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Getting application source code'
                 checkout scm
             }
         }
@@ -21,15 +20,34 @@ pipeline {
                 sh 'npm test'
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t webapp-project .'
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                    docker rm -f webapp-container || true
+
+                    docker run -d \
+                    --name webapp-container \
+                    -p 3000:3000 \
+                    webapp-project
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'Build and tests completed successfully!'
+            echo 'Application successfully deployed using Docker!'
         }
 
         failure {
-            echo 'Build or tests failed!'
+            echo 'Deployment failed!'
         }
     }
 }
